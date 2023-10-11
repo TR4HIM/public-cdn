@@ -1,6 +1,5 @@
+let clubs = [];
 
-    let clubs = [];
-    const url = 'https://api.webflow.com/v2/collections/6523dcca4dd8dc8744b5e006/items';
     const regions = [
         {
             regionName: "Bayern Süd",
@@ -60,6 +59,7 @@
             <div class="modal-content" > 
             </div>
         </div>`
+        
     const searchCloseIconSvg=`
         <svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">
             <mask id="mask0_919_15272" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="25">
@@ -161,66 +161,7 @@
                 <circle cx="33.3974" cy="227.03" r="1.75313" fill="#282D37"/>
             </svg>  
     `
- 
-
-    $(document).ready(function(){
-        $('#injected-block').html(baseHtml)
-        $('.club-item').each(function() {
-            var clubname = $(this).attr('clubname');
-            var city = $(this).attr('clubaddresscity');
-            var street = $(this).attr('clubaddressstreet');
-            var zip = $(this).attr('clubaddresszip');
-            var email = $(this).attr('clubcontactemail');
-            var contactName = $(this).attr('clubcontactname');
-            var phone = $(this).attr('clubcontactphone');
-            var website = $(this).attr('clubcontactwebsite');
-            var region = $(this).attr('region');
-            var regionNumber = $(this).attr('regionnumber');
-            var categories = $(this).attr('categories');
-            var sports = $(this).attr('sports');
-            var reportid = $(this).attr('reportid');
-
-            var clubObject = {
-                clubname: clubname,
-                clubaddresscity: city,
-                clubaddressstreet: street,
-                clubaddresszip: zip,
-                clubcontactemail: email,
-                clubcontactname: contactName,
-                clubcontactphone: phone,
-                clubcontactwebsite: website,
-                region: region,
-                regionnumber: regionNumber,
-                categories: categories,
-                sports: sports,
-                reportid: reportid
-            };
-
-            clubs.push(clubObject);
-        });
-
-        console.log(clubs);
-        if (regions) {
-            const regionListHtml = generateRegionList(regions);
-            $('#regionList').html(regionListHtml);
-            $('#regionMap').html(mapSvg);
-
-            // Call the function to attach hover event handlers
-            attachHoverEventHandlers();
-
-            $('#loading-overlay').fadeOut('slow', function () {
-                $(this).remove();
-            });
-                        
-        } 
-        
-    })
-    /*
-        Region List display Helpers
-    */
-
-    const generateRegionList = (data) => {
-        const searchForm = `
+    const searchForm = `
             <div class="search-form">
                 <label for="search">Suchbegriff</label>
                 <div>
@@ -230,11 +171,77 @@
                         ${searchCloseIconSvg}
                     </button>
                 </div>
-            </div>`;
+            </div>
+    `;
+   
+    // injijection Function
 
+    const injictRegionFilterBlock =()=>{
+        $('#injected-block').html(baseHtml)
+        if (regions) {
+            const regionListHtml = generateRegionList(regions);
+            $('#regionList').html(regionListHtml);
+            $('#regionMap').html(mapSvg);
+            // Call the function to attach hover event handlers
+            attachHoverEventHandlers();
+            $('#loading-overlay').fadeOut('slow', function () {
+                $(this).remove();
+            });            
+        }  
+    }
+
+    const injictRegionClubFullList = () => {
+        // const clubDisplayFullList = clubs.map((item) => `
+        //         <li class="filterClubItem" clubname="${item.clubname}" clubZip="${item.clubzip}" clubaddresscity="${item.clubaddresscity}">
+        //             <p>
+        //                 <strong>${item.clubname}</strong>
+        //                 <span>${item.clubaddresscity}</span>
+        //             </p>
+        //             <button class='clubModal-btn' data-clubId='${item.reportid}'>Clubdetails lesen</button>
+        //         </li>
+        //     `).join('');
+        // $('#fullClubsLByRegionList').html(`${searchForm}<ul id="clublist">${clubDisplayFullList}</ul>`)   
+        $('#fullClubsLByRegionList').html(searchForm)
+        $('#fullClubsLByRegionList #searchInputClubs').on('keyup', function() {
+            const searchTerm = $(this).val().toLowerCase(); // Get the search input value and convert it to lowercase for case-insensitive search
+           
+            // Only start searching when the user has typed at least three characters
+            if (searchTerm.length >= 3) {
+                // Loop through all the club items
+                $('.club-item').each(function() {
+                    const clubname = $(this).attr('clubname') ?? '';
+                    const clubCity = $(this).attr('clubaddresscity')?? '';
+                    const clubZip = $(this).attr('clubaddresszip')?? '';
+
+                    // Check if any of the attributes are defined and if they start with the search term
+                    if (
+                        (clubname && clubname.toLowerCase().startsWith(searchTerm)) ||
+                        (clubCity && clubCity.toLowerCase().startsWith(searchTerm)) ||
+                        (clubZip && clubZip.toLowerCase().startsWith(searchTerm))
+                    ) {
+                        // If any of them do, show the club item
+                        $(this).show();
+                    } else {
+                        // If none of them do, hide the club item
+                        $(this).hide();
+                    }
+                });
+            } else {
+                // If the search term is less than three characters, show all items
+                $('.club-item').show();
+            }
+        });
+        handleClickOnClub(clubs)
+    }
+    /*
+        Region List display Helpers
+    */
+
+    const generateRegionList = (data) => {
+       
         const regionListItems = data.map((dataItem) => {
             const regionNameWithoutSpaces = dataItem.regionName.replace(/\s+/g, '-').toLowerCase(); // Replace spaces with hyphens
-            const link = `region/${regionNameWithoutSpaces}`;
+            const link = `regionen/${regionNameWithoutSpaces}`;
 
             return `
                 <li data-region=${dataItem.regionNumber}>
@@ -296,11 +303,53 @@
     /*
         Search Helpers
     */
+    // Function That will Take list of clubs from hidden element 
+    const pushToClubsArray = () => {
+        $('.club-item').each(function () {
+            var clubname = $(this).attr('clubname');
+
+            // Check if clubname is defined before pushing the object
+            if (clubname !== undefined ) {
+                var city = $(this).attr('clubaddresscity');
+                var street = $(this).attr('clubaddressstreet');
+                var zip = $(this).attr('clubaddresszip');
+                var email = $(this).attr('clubcontactemail');
+                var contactName = $(this).attr('clubcontactname');
+                var phone = $(this).attr('clubcontactphone');
+                var website = $(this).attr('clubcontactwebsite');
+                var region = $(this).attr('region');
+                var regionNumber = $(this).attr('regionnumber');
+                var categories = $(this).attr('categories');
+                var sports = $(this).attr('sports');
+                var reportid = $(this).attr('reportid');
+
+                var clubObject = {
+                    clubname: clubname,
+                    clubaddresscity: city,
+                    clubaddressstreet: street,
+                    clubaddresszip: zip,
+                    clubcontactemail: email,
+                    clubcontactname: contactName,
+                    clubcontactphone: phone,
+                    clubcontactwebsite: website,
+                    region: region,
+                    regionnumber: regionNumber,
+                    categories: categories,
+                    sports: sports,
+                    reportid: reportid
+                };
+
+                clubs.push(clubObject);
+            }
+        });
+    };
+
     // function to update the search results based on the provided parameter
     const updateSearchResults = (param) => {
-        const result = findMatchingData(param, clubs, regions);
-          console.log(result)
-        if (result.length && param) {
+       
+        let result = []
+        if (param.length >= 3) {
+            result = findMatchingData(param, clubs, regions);
             const htmlContentArray = result.map(item => `
                 <li>
                     <p>
@@ -315,11 +364,12 @@
                     ${htmlContentArray.join('')}
                 </ul>
             `;
-            
-            $('#searchResults').html(htmlContent).fadeIn(500);
+
+            if(result.length) $('#searchResults').html(htmlContent).fadeIn(500);
             // Modal Event
             handleClickOnClub(result)
         } else {
+            result = [];
             $('#searchResults').fadeOut(300, () => {
                 $('#searchResults').empty(); // Clear the results if no match is found
             });
@@ -328,6 +378,7 @@
             });
             
         }
+        
         hideOrShowListItemsByRegion(result)
     };
 
@@ -340,16 +391,17 @@
         for (const data of dataArray) {
             // Convert property values to lowercase and check for a match
             if (
-            data.clubaddresszip?.toLowerCase() === lowerParam ||
-            data.clubname?.toLowerCase() === lowerParam ||
-            data.clubaddresscity?.toLowerCase() === lowerParam ||
-            data.region?.toLowerCase() === lowerParam
+                data.clubaddresszip?.toLowerCase().startsWith(lowerParam) ||
+                data.clubname?.toLowerCase().startsWith(lowerParam)||
+                data.clubaddresscity?.toLowerCase().startsWith(lowerParam)||
+                data.region?.toLowerCase().startsWith(lowerParam)
             ) {
-            matchingData.push(data); // Fix the variable name here
+                matchingData.push(data); // Fix the variable name here
             }
         }
 
         // Return the array of matching objects
+        console.log(matchingData)
         return matchingData;
     };
 
@@ -456,15 +508,14 @@
     }
     // Handel Click With filter
     const handleClickOnClub = (clubs) => {
-        $('#injected-block').on('click', '.clubModal-btn', function () {
+        $('.clubModal-btn').on('click', function () {
             const clubId = $(this).data('clubid');
             if (!clubs) return;
             const foundedClub = clubs.find(club => club.reportid === clubId);
             updateModalHtml(foundedClub);
         });
+         // Close Modal    
+        $('#injected-block').on('click', '#closeModalBtn', function () {
+            $('#myModal').fadeOut(500)
+        });
     }
-    // Close Modal    
-    $('#injected-block').on('click', '#closeModalBtn', function () {
-        $('#myModal').fadeOut(500)
-    });
-    
